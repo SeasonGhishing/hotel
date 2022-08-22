@@ -1,26 +1,38 @@
 from django.contrib.auth.models import AbstractUser
-from django.db.models import CharField
-from django.urls import reverse
+from django.db.models import BooleanField, CharField, EmailField
 from django.utils.translation import gettext_lazy as _
+
+from .managers import CustomUserManager
 
 
 class User(AbstractUser):
-    """
-    Default custom user model for hotel_booking.
-    If adding fields that need to be filled at user signup,
-    check forms.SignupForm and forms.SocialSignupForms accordingly.
-    """
+    """Default user for Hotel Booking."""
 
-    #: First and last name do not cover name patterns around the globe
+    SOCIAL_AUTH_PROVIDERS = (
+        ("GOOGLE", ("GOOGLE")),
+        ("FACEBOOK", ("FACEBOOK")),
+        ("TWITTER", ("TWITTER")),
+        ("APPLE", ("APPLE")),
+    )
+
     name = CharField(_("Name of User"), blank=True, max_length=255)
+    email = EmailField(_("Email Address"), unique=True)
+    email_verified = BooleanField(default=False)
+    social_auth = CharField(
+        choices=SOCIAL_AUTH_PROVIDERS,
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="This field indicates through which social app has user logged in or signup",
+    )
     first_name = None  # type: ignore
     last_name = None  # type: ignore
+    username = None  # type: ignore
 
-    def get_absolute_url(self):
-        """Get url for user's detail view.
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
 
-        Returns:
-            str: URL for user detail.
+    objects = CustomUserManager()
 
-        """
-        return reverse("users:detail", kwargs={"username": self.username})
+    def __str__(self):
+        return self.name or self.email or self.mobile or ""
