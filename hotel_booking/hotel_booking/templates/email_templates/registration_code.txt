@@ -1,0 +1,7 @@
+Hello from {{ site_name }} Team,
+
+Please use this code {{ otp }} to verify your email address.
+It will expire in 15 minutes.
+
+Best Regards
+{{ site_name }} Team
