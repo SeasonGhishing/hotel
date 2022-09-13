@@ -1,4 +1,12 @@
+import os
+
 from django.db import models
+
+
+def upload_path(instance, filename):
+    return os.path.join(
+        instance.__class__.__name__, str(instance.created_at.microsecond), filename
+    )
 
 
 class TimeStampAbstractModel(models.Model):

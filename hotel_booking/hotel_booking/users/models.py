@@ -14,6 +14,7 @@ class User(AbstractUser):
         ("TWITTER", ("TWITTER")),
         ("APPLE", ("APPLE")),
     )
+    USER_TYPE = (("HOTEL", "HOTEL"), ("CUSTOMER", "CUSTOMER"))
 
     name = CharField(_("Name of User"), blank=True, max_length=255)
     email = EmailField(_("Email Address"), unique=True)
@@ -25,6 +26,7 @@ class User(AbstractUser):
         null=True,
         help_text="This field indicates through which social app has user logged in or signup",
     )
+    user_type = CharField(max_length=8, choices=USER_TYPE, default="HOTEL")
     first_name = None  # type: ignore
     last_name = None  # type: ignore
     username = None  # type: ignore
