@@ -70,11 +70,14 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "drf_spectacular",
     "versatileimagefield",
+    "phonenumber_field",
 ]
 
 LOCAL_APPS = [
     "hotel_booking.users",
     "hotel_booking.core",
+    "hotel_booking.hotel",
+    "hotel_booking.room",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
