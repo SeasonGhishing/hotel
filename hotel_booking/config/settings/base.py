@@ -69,7 +69,6 @@ THIRD_PARTY_APPS = [
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
-    "versatileimagefield",
     "phonenumber_field",
 ]
 
