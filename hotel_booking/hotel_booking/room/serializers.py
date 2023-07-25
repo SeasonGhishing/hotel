@@ -39,8 +39,10 @@ class RoomPricingSerializer(serializers.ModelSerializer):
                   'discount_percentage', 'surge_percentage')
 
     def validate(self, data):
-        price_with_breakfast = data.get('price_with_breakfast', self.instance.price_with_breakfast)
-        price_without_breakfast = data.get('price_without_breakfast', self.instance.price_without_breakfast)
+        price_with_breakfast = data.get('price_with_breakfast', self.instance.price_with_breakfast if self.instance else None)
+        price_without_breakfast = data.get('price_without_breakfast', self.instance.price_without_breakfast if self.instance else None)
+        # price_with_breakfast = data.get('price_with_breakfast', self.instance.price_with_breakfast)
+        # price_without_breakfast = data.get('price_without_breakfast', self.instance.price_without_breakfast)
 
         if price_with_breakfast is not None and price_with_breakfast < 0:
             raise serializers.ValidationError("Price with breakfast must be a positive value.")
