@@ -1,6 +1,7 @@
 from django.test import TestCase
 from .models import Hotel, Facility, Rating
 
+#Testing for hotel model
 class HotelModelTestCase(TestCase):
     def setUp(self):
         self.facility1 = Facility.objects.create(
