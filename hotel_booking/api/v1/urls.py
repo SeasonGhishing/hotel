@@ -8,4 +8,5 @@ urlpatterns = [
         "hotel/",
         include("hotel_booking.hotel.api.v1.users.urls", namespace="hotel-owner"),
     ),
+    path("rooms/", include("hotel_booking.room.api.v1.users.urls", namespace="rooms")),
 ]

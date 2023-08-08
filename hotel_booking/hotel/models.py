@@ -66,3 +66,7 @@ class HotelFacility(models.Model):
 class HotelRating(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
     rating = models.ForeignKey(Rating, on_delete=models.CASCADE)
+
+class HotelPhoto(models.Model):
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
+    photo = models.ForeignKey(Photo, on_delete=models.CASCADE)

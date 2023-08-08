@@ -4,7 +4,7 @@ Django Model for the room
 from django.db import models
 from decimal import Decimal
 from hotel_booking.hotel.models import Hotel
-
+from hotel_booking.users.models import User
 
 class RoomType(models.Model):
     name= models.CharField(unique=True, max_length=255,blank=False)
@@ -19,7 +19,7 @@ class Room(models.Model):
     occupancy_adult= models.PositiveIntegerField()
     occupancy_child = models.PositiveIntegerField()
     features = models.TextField(blank=True)
-    room_photo = models.ManyToManyField('Photo',related_name='RoomPhotoes')
+    room_photo = models.ManyToManyField('Photo')
     total_rooms = models.PositiveIntegerField()
     room_booked = models.PositiveIntegerField()
 
@@ -28,7 +28,7 @@ class Room(models.Model):
 
     def unbooked_rooms(self):
         return self.total_rooms-self.room_booked
-    
+
     def main_photo(self):
         return self.room_photo.get(order=1)
 
@@ -41,8 +41,11 @@ class Photo(models.Model):
         return f"Photo {self.pk}"
     
     def is_main_photo(self):
-        return self.order==1
+        return self.order == 1
 
+class HotelPhoto(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
 
 class RoomPricing(models.Model):
     name = models.OneToOneField(Room, on_delete=models.CASCADE)
@@ -71,3 +74,21 @@ class RoomPricing(models.Model):
             self.price_without_breakfast += surge_amount
 
         super(RoomPricing, self).save()
+
+
+class Book(models.Model):
+
+    """For booking room of the hotel."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    details = models.FileField(upload_to='', blank=True, null=True)
+    room_number = models.CharField(max_length=255)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    checkout_status = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ('start_date',)
+
+    def __str__(self):
+        return f'Booking for {self.room_number} by {self.user}'
