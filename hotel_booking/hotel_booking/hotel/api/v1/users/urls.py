@@ -16,4 +16,5 @@ urlpatterns = [
         HotelOwnerProfileUpdateView.as_view(),
         name="hotel-owner-profile-update",
     ),
+    path("owner/", include("hotel_booking.hotel.urls", namespace="details-hotel")),
 ]

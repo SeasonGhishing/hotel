@@ -54,7 +54,8 @@ class UserRegistrationView(CreateAPIView):
         serializer.save()
         headers = self.get_success_headers(serializer.data)
         return Response(
-            {"detail": _("Verification email sent.")},
+            {
+             "user_id": serializer.data},
             status=status.HTTP_201_CREATED,
             headers=headers,
         )

@@ -13,21 +13,6 @@ class HotelOwnerProfile(TimeStampAbstractModel):
     mobile_no = PhoneNumberField()
     avatar = models.ImageField("Image", upload_to=upload_path, blank=True, null=True)
 
-class Hotel(models.Model):
-    """
-    
-    """
-    name = models.CharField(max_length=255)
-    location = models.CharField(max_length=255)
-    photos = models.ManyToManyField('Photo')
-    facility = models.ManyToManyField('Facility', through='HotelFacility')
-    ratings = models.ManyToManyField('Rating', through='HotelRating')
-
-    class Meta:
-        verbose_name_plural = 'Hotels'
-
-    def __str__(self):
-        return self.name
     
 class Facility(models.Model):
     name = models.CharField(max_length=255)
@@ -58,6 +43,22 @@ class Rating(models.Model):
 
     def __str__(self):
         return self.description
+
+class Hotel(models.Model):
+    """
+    
+    """
+    name = models.CharField(max_length=255)
+    location = models.CharField(max_length=255)
+    photos = models.ManyToManyField(Photo, through='HotelPhoto')
+    facility = models.ManyToManyField(Facility, through='HotelFacility')
+    ratings = models.ManyToManyField(Rating, through='HotelRating')
+
+    class Meta:
+        verbose_name_plural = 'Hotels'
+
+    def __str__(self):
+        return self.name
     
 class HotelFacility(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
@@ -66,3 +67,7 @@ class HotelFacility(models.Model):
 class HotelRating(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
     rating = models.ForeignKey(Rating, on_delete=models.CASCADE)
+
+class HotelPhoto(models.Model):
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
+    photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
