@@ -6,11 +6,11 @@ Views for the room api
 #from rest_framework.simplejwt.authentication import JWTAuthentication
 from rest_framework import viewsets, mixins, status
 from rest_framework.permissions import IsAuthenticated
-from .models import Room, RoomPricing
-from .serializers import  BookSerializer, PhotoCreateSerializers, RoomSerializers, RoomPricingSerializer, RoomTypeSerializers
+from .models import Book, Room, RoomPricing
+from .serializers import  BookSerializer, BookUpdateSerializer, PhotoCreateSerializers, RoomFilter, RoomSerializers, RoomPricingSerializer, RoomTypeSerializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
+from django_filters import rest_framework as filters
 
 
 class RoomPricingListView(APIView):  # Updated view name
@@ -68,17 +68,6 @@ class RoomPricingDetailView(APIView):  # Updated view name
         return Response(status=status.HTTP_204_NO_CONTENT)
     
 
-class UserBookingView(APIView):
-    """
-
-    View class of hotel booking by users.
-    """
-    def post(self, request, *args, **kwargs):
-        serializer = BookSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({'msg':'Room is successfully booked.', 'details': serializer.data}, status=status.HTTP_201_CREATED)
-
 
 """
 Views for the room api
@@ -92,7 +81,6 @@ from hotel_booking.room.models import Room, RoomPricing
 from .serializers import  RoomSerializers, RoomPricingSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
 
 
 # class RoomViewSet(mixins.RetrieveModelMixin,
@@ -198,3 +186,42 @@ class PhotoViewSet(viewsets.ModelViewSet):
         serializer = PhotoCreateSerializers(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({ 'msg':'Photo is Successful Creates'}, status=status.HTTP_201_CREATED)
+
+class UserBookingView(APIView):
+    """
+
+    View class of hotel booking by users.
+    """
+    def post(self, request, *args, **kwargs):
+        serializer = BookSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'msg':'Room is successfully booked.', 'details': serializer.data}, status=status.HTTP_201_CREATED)
+
+class BookingUpdateView(APIView):
+    """
+
+    View class of update booking for status and date change.
+    """
+    def post(self, request, booking_id, format=None):
+        try:
+            booking = Book.objects.get(pk=booking_id)
+        except Book.DoesNotExist:
+            return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BookUpdateSerializer(booking, data=request.data, partial=True)
+        if serializer.is_valid():
+            # Update the booking's check-in, check-out dates, and status
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class FilterRoom(generics.ListCreateAPIView):
+    """
+
+    View class for filtering room for booking.
+    """
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializers
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = RoomFilter

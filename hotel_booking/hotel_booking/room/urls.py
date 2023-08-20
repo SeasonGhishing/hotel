@@ -10,7 +10,7 @@ from django.urls import (
 
 from rest_framework.routers import DefaultRouter
 
-from .views import PhotoViewSet, RoomListCreateView, RoomTypeViewSet, UserBookingView
+from .views import BookingUpdateView, FilterRoom, PhotoViewSet, RoomListCreateView, RoomTypeViewSet, UserBookingView
 
 app_name = 'room.users'
 
@@ -27,6 +27,9 @@ urlpatterns = [
     path('book', UserBookingView.as_view(), name='room-booking'),
     path('rooms/', RoomListCreateView.as_view(), name='room-list-create'),
     path('room-type/', RoomTypeViewSet.as_view({'post': 'create'}), name='room-type-create'),
-    path('photo/', PhotoViewSet.as_view({'post': 'create'}), name='photo-create'),  
+    path('photo/', PhotoViewSet.as_view({'post': 'create'}), name='photo-create'),
+    path('booking/update/<int:booking_id>/', BookingUpdateView.as_view(), name='booking-update'),
+    path('search/', FilterRoom.as_view(), name='room-search'),
+
 ]
 

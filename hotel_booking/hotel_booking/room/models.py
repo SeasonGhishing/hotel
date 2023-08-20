@@ -74,17 +74,24 @@ class RoomPricing(models.Model):
 
         super(RoomPricing, self).save()
 
+from django.db.models import BooleanField, CharField, EmailField
 
 class Book(models.Model):
 
     """For booking room of the hotel."""
+    STATUS = (("PENDING", "PENDING"),
+            ("CONFIRM", "CONFIRM"),
+            ("CHECK_IN", "CHECK_IN"),
+            ("CHECK_OUT", "CHECK_OUT"),
+            ("CANCEL", "CANCEL"))
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     details = models.FileField(upload_to='', blank=True, null=True)
     room_number = models.CharField(max_length=255)
     start_date = models.DateField()
     end_date = models.DateField()
-    checkout_status = models.BooleanField(default=False)
+    status = CharField(max_length=15, choices=STATUS, default="PENDING")
 
     class Meta:
         ordering = ('start_date',)

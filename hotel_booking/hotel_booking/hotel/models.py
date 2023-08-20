@@ -63,11 +63,14 @@ class Hotel(models.Model):
 class HotelFacility(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE)
+    date_of_added = models.DateTimeField(auto_now_add=True)
 
 class HotelRating(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
     rating = models.ForeignKey(Rating, on_delete=models.CASCADE)
+    date_of_posted = models.DateTimeField(auto_now_add=True)
 
 class HotelPhoto(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
     photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
+    date_of_added = models.DateTimeField(auto_now_add=True)
