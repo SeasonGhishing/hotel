@@ -4,6 +4,7 @@ Serializers for room api
 from rest_framework import serializers
 from hotel_booking.hotel.models import Hotel
 from  .models import Book, Photo, Room, RoomPricing, RoomType
+from  hotel_booking.room.models import Room, RoomPricing
 from django_filters import rest_framework as filters, ModelChoiceFilter, RangeFilter
 
 class RoomPricingSerializer(serializers.ModelSerializer):
@@ -28,15 +29,6 @@ class RoomPricingSerializer(serializers.ModelSerializer):
 """
 Serializers for room api
 """
-from rest_framework import serializers
-
-from  hotel_booking.room.models import Room, RoomPricing
-room_photo = serializers.PrimaryKeyRelatedField(
-        queryset=Photo.objects.all(),
-        many=True,
-    )
-
-
 class RoomSerializers(serializers.ModelSerializer):
     """Serializers for recipe"""
 
@@ -50,15 +42,8 @@ class RoomSerializers(serializers.ModelSerializer):
 
     def create(self, validated_data):
         photo_data = validated_data.pop('room_photo')  
-        
         room = Room.objects.create(**validated_data) 
-
         room.room_photo.set(photo_data)
-
-        
-        #for photo in photo_data:
-            #Photo.objects.create(room=room, **photo) 
-        
         return room
     
     def update(self, instance, validated_data):
@@ -94,13 +79,6 @@ class RoomTypeSerializers(serializers.ModelSerializer):
         from the validated data. """
         return RoomType.objects.create(**validated_data)
 
-
-
-
-
-
-
-
 class BookSerializer(serializers.ModelSerializer):
     """
 
@@ -134,7 +112,6 @@ class BookSerializer(serializers.ModelSerializer):
         from the validated data. """
         return Book.objects.create(**validated_data)
 
-
 class BookUpdateSerializer(serializers.ModelSerializer):
     """
 
@@ -165,5 +142,3 @@ class RoomFilter(filters.FilterSet):
 #qs = Room.objects.all().order_by('hotel')
 #f = RoomFilter({'occupancy_adult_min': '1'}, queryset=qs)
 #f = RoomFilter({'occupancy_adult_min': '2', 'occupancy_adult_max': '5'}, queryset=qs)
-
-

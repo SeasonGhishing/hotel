@@ -1,5 +1,5 @@
 from django.test import TestCase
-from .models import Hotel, Facility, Rating
+from ..models import Hotel, Facility, Rating
 
 #Testing for hotel model
 class HotelModelTestCase(TestCase):

@@ -5,6 +5,7 @@ from django.db import models
 from decimal import Decimal
 from hotel_booking.hotel.models import Hotel
 from hotel_booking.users.models import User
+from django.db.models import BooleanField, CharField, EmailField
 
 class RoomType(models.Model):
     name= models.CharField(unique=True, max_length=255,blank=False)
@@ -73,8 +74,6 @@ class RoomPricing(models.Model):
             self.price_without_breakfast += surge_amount
 
         super(RoomPricing, self).save()
-
-from django.db.models import BooleanField, CharField, EmailField
 
 class Book(models.Model):
 
