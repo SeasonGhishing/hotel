@@ -5,12 +5,14 @@ Views for the room api
 #from rest_framework.simplejwt.authentication import JWTAuthentication
 from rest_framework import viewsets, mixins, status, generics
 from rest_framework.permissions import IsAuthenticated
-from .serializers import  BookSerializer, BookUpdateSerializer, PhotoCreateSerializers, RoomFilter, RoomSerializers, RoomPricingSerializer, RoomTypeSerializers, RoomSerializers, RoomPricingSerializer
+from .serializers import  BookSerializer, BookUpdateSerializer, PhotoCreateSerializers, RoomFilter, RoomSerializers, RoomPricingSerializer, RoomTypeSerializers, RoomSerializers, RoomPricingSerializer,ConformBookingSerializer
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django_filters import rest_framework as filters
 from rest_framework.permissions import IsAuthenticated
 from hotel_booking.room.models import Room, Book, RoomPricing
+from hotel_booking.room.confirm_booking import send_confirmation_email, send_rejection_email
 
 
 class RoomPricingListView(APIView):  # Updated view name
@@ -167,6 +169,32 @@ class UserBookingView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({'msg':'Room is successfully booked.', 'details': serializer.data}, status=status.HTTP_201_CREATED)
+
+
+class BookingActionView(generics.UpdateAPIView):
+    """View for accepting or rejecting the booking request"""
+    queryset = Book.objects.all()
+    serializer_class = ConformBookingSerializer
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        
+        accept_request = self.request.query_params.get('accept', '').lower() == 'true'
+        
+        if accept_request:
+            serializer.save(status="Confirm")
+            room = Room.objects.get(id=instance.room)
+            room.room_booked += 1
+            room.save()
+             
+            send_confirmation_email(instance.user)
+        else:
+            serializer.save(status="Cancel")
+            send_rejection_email(instance.user)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class BookingUpdateView(APIView):
     """

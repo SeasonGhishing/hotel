@@ -121,6 +121,13 @@ class BookUpdateSerializer(serializers.ModelSerializer):
         model = Book
         fields = ['start_date', 'end_date', 'status']
 
+class ConformBookingSerializer(serializers.ModelSerializer):
+    """Serializer class for confirmation of the booking process"""
+
+    class Meta:
+        model = Book
+        fields = ('user', 'status')  
+
 class RoomFilter(filters.FilterSet):
     """
 
