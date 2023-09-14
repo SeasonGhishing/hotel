@@ -9,5 +9,4 @@ urlpatterns = [
     path('create-facility/', FacilityViewSet.as_view({'post': 'create'}), name='create-facility'),
     path('create-rating/', RatingViewSet.as_view({'post': 'create'}), name='create-facility'),
     path('create-photo/', PhototViewSet.as_view({'post': 'create'}), name='create-facility'),
-
 ]

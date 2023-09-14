@@ -3,15 +3,19 @@ Views for the room api
 
 """
 #from rest_framework.simplejwt.authentication import JWTAuthentication
+from django.utils import timezone
 from rest_framework import viewsets, mixins, status, generics
 from rest_framework.permissions import IsAuthenticated
-from .serializers import  BookSerializer, BookUpdateSerializer, PhotoCreateSerializers, RoomFilter, RoomSerializers, RoomPricingSerializer, RoomTypeSerializers, RoomSerializers, RoomPricingSerializer
+
+from hotel_booking.hotel.models import Hotel, HotelOwnerProfile
+from hotel_booking.users.models import User
+from .serializers import  BookSerializer, BookUpdateSerializer, ConformBookingSerializer, DashboardRoomPriceSerializer, DashboardRoomSerializer, DashboardSerializer, OccupancyFilter, OccupancySerializer, PhotoCreateSerializers, RoomFilter, RoomSerializers, RoomPricingSerializer, RoomTypeSerializers, RoomSerializers, RoomPricingSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django_filters import rest_framework as filters
 from rest_framework.permissions import IsAuthenticated
-from hotel_booking.room.models import Room, Book, RoomPricing
-
+from hotel_booking.room.models import Occupancy, Room, Book, RoomPricing, RoomType
+from rest_framework.generics import ListAPIView
 
 class RoomPricingListView(APIView):  # Updated view name
     def get(self, request):
@@ -195,3 +199,138 @@ class FilterRoom(generics.ListCreateAPIView):
     serializer_class = RoomSerializers
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = RoomFilter
+
+from django.db.models import Q
+
+class OccupancyFilterView(ListAPIView):
+    serializer_class = OccupancySerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = OccupancyFilter
+
+    def get_queryset(self):
+        queryset = Occupancy.objects.all()
+        now = timezone.now().date()
+        this_month = now.month
+        this_year = now.year
+
+        # Check if the 'this_month' query parameter is present and set to 'true'
+        if self.request.query_params.get('this_month') == 'true':
+            queryset = queryset.filter(
+                Q(start_date__month=this_month, start_date__year=this_year) |
+                Q(end_date__month=this_month, end_date__year=this_year)
+            )
+        # Check if the 'today' query parameter is present and set to 'true'
+        if self.request.query_params.get('today') == 'true':
+            queryset = queryset.filter(
+                Q(start_date__exact=now) |
+                Q(end_date__exact=now)
+            )
+
+        # Check if the 'this_year' query parameter is present and set to 'true'
+        if self.request.query_params.get('this_year') == 'true':
+            queryset = queryset.filter(
+                Q(start_date__year=this_year) |
+                Q(end_date__year=this_year)
+            )
+
+        return queryset
+    
+from hotel_booking.room.confirm_booking import send_confirmation_email, send_rejection_email
+
+class BookingActionView(generics.UpdateAPIView):
+    """View for accepting or rejecting the booking request"""
+    queryset = Book.objects.all()
+    serializer_class = ConformBookingSerializer
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        
+        accept_request = self.request.query_params.get('accept', '').lower() == 'true'
+        
+        if accept_request:
+            serializer.save(status="Confirm")
+            room = Room.objects.get(id=instance.room.id)
+            room.room_booked += 1
+            room.save()
+             
+            send_confirmation_email(instance.user)
+        else:
+            serializer.save(status="Cancel")
+            send_rejection_email(instance.user)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+class HotelViewSet(viewsets.ReadOnlyModelViewSet):
+   
+    serializer_class = DashboardRoomSerializer
+    queryset = Room.objects.all()
+
+
+class SendDataToDashboard(APIView):
+    """
+    View class of sending data to the dashboard
+    """
+    authentication_classes = [IsAuthenticated]
+    def get(self, request):
+        try:
+            user = request.User
+            if isinstance(user, User):
+                is_superuser =user.is_superuser
+
+                if is_superuser:
+                
+                    arrivals=Book.arrival()
+                    departures=Book.departures()
+                    new_bookings=Book.new_bookings()
+                    stay_overs=Book.count_stay_overs()
+                    cancelled_bookings = Book.cancelled_bookings()
+                    dashboard_data = {
+                        "Arrivals":arrivals,
+                        "Departures":departures,
+                        "New_Bookings": new_bookings,
+                        "Cancelled_Booking":cancelled_bookings,
+                        "Stay_Overs": stay_overs
+                    }
+                    serializer = DashboardSerializer(dashboard_data)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    return Response({"message":"Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+
+
+            if isinstance(User,HotelOwnerProfile):
+                hotel =  HotelOwnerProfile.hotel
+                book = Book(hotel)
+                arrivals=book.arrival()
+                departures=book.departures()
+                new_bookings=book.new_bookings()
+                stay_overs=book.count_stay_overs()
+                cancelled_bookings = book.cancelled_bookings()
+                dashboard_data = {
+                        "Arrivals":arrivals,
+                        "Departures":departures,
+                        "New_Bookings": new_bookings,
+                        "Cancelled_Booking":cancelled_bookings,
+                        "Stay_Overs": stay_overs
+                    }
+                serializer = DashboardSerializer(dashboard_data)
+                return Response(serializer.data, status=status.HTTP_200_OK)     
+            else:
+                return Response({"message":"Unauthorized"}, status=status.HTTP_403_FORBIDDEN)       
+        except Exception as e:
+            return Response({"error":str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -3,6 +3,8 @@ from .serializers import FacilitySerializer, HotelCreateSerializer, PhototSerial
 from .models import Hotel
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.views import APIView
+from django.db.models import Sum
 
 class HotelViewSet(viewsets.ModelViewSet):
     serializer_class = HotelCreateSerializer
