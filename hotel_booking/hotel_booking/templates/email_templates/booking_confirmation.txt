@@ -1,0 +1,10 @@
+Your Booking Has Been Confirmed
+
+Dear {{ user.username }},
+
+We are excited to inform you that your booking has been confirmed.
+
+Thank you for choosing our services!
+
+Best regards,
+The Booking Team
