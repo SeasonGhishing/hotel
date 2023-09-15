@@ -1,0 +1,10 @@
+Your Booking Has Been Rejected
+
+Dear {{ user.username }},
+
+We are sorry to inform you that your booking has been Rejected.
+
+Thank you for choosing our services!
+
+Best regards,
+The Booking Team
