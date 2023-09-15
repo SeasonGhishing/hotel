@@ -2,11 +2,16 @@
 Django Model for the room 
 """
 from django.db import models
+from django.utils.timezone import localdate
 from decimal import Decimal
 from hotel_booking.hotel.models import Hotel
 from hotel_booking.users.models import User
 from django.db.models import BooleanField, CharField, EmailField
+from hotel_booking.core.models import TimeStampAbstractModel
 
+
+#for using in the book model
+today = localdate()
 class RoomType(models.Model):
     name= models.CharField(unique=True, max_length=255,blank=False)
 
@@ -39,6 +44,7 @@ class Room(models.Model):
 
     def unbooked_rooms(self):
         return self.total_rooms-self.room_booked
+    
 
     def main_photo(self):
         return self.room_photo.get(order=1)
@@ -75,7 +81,7 @@ class RoomPricing(models.Model):
 
         super(RoomPricing, self).save()
 
-class Book(models.Model):
+class Book(TimeStampAbstractModel):
 
     """For booking room of the hotel."""
     STATUS = (("PENDING", "PENDING"),
@@ -97,3 +103,51 @@ class Book(models.Model):
 
     def __str__(self):
         return f'Booking for {self.room_number} by {self.user}'
+    
+    def arrival(self):
+        # Count the arrivals for today
+        arrival_count = Book.objects.filter(start_date=today, STATUS="CONFIRM").count()
+        return arrival_count
+
+    def departures(self):
+        departure_count = Book.objects.filter(end_date=today).count()
+        return departure_count
+    
+    def new_bookings(self):
+        booking_count = Book.objects.filter(STATUS="CONFIRM", created_at = today).count()
+        return booking_count
+    
+    def count_stay_overs(self):
+        stay_over_count = Book.objects.filter(status='CHECK_IN').count()
+        return stay_over_count
+    
+    def cancelled_bookings(self):
+        cancelled_count = Book.objects.filter(STATUS='CANCELLED', updated_at = today).count()
+        return cancelled_count
+
+class Occupancy(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    occupied_rooms = models.PositiveIntegerField(default=0)
+    available_rooms = models.PositiveIntegerField(default=0)
+    unavailable_rooms = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name_plural = "Occupancies"
+
+    def update_occupancy(self):
+        booked_rooms = Book.objects.filter(
+            room=self.room,
+            check_in__gte=self.start_date,
+            check_out__lte=self.end_date
+        ).aggregate(total_booked=models.Sum('rooms_booked'))['total_booked'] or 0
+        
+        self.occupied_rooms = booked_rooms
+        self.available_rooms = self.room.total_rooms - booked_rooms
+        self.unavailable_rooms = self.room.room_booked - booked_rooms
+        self.save()
+
+    def save(self, *args, **kwargs):
+        self.update_occupancy()
+        super().save(*args, **kwargs)

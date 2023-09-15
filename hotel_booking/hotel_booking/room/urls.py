@@ -9,7 +9,9 @@ from django.urls import (
 
 from rest_framework.routers import DefaultRouter
 
-from .views import BookingUpdateView, FilterRoom, PhotoViewSet, RoomListCreateView, BookingActionView, RoomPricingDetailView, RoomPricingListView, RoomRetrieveUpdateDeleteView, RoomTypeViewSet, UserBookingView
+from .views import BookingUpdateView, FilterRoom, PhotoViewSet, RoomListCreateView, \
+BookingActionView, RoomPricingDetailView, RoomPricingListView, RoomRetrieveUpdateDeleteView,SendDataToDashboard, RoomTypeViewSet, UserBookingView, \
+OccupancyFilterView, HotelViewSet
 
 app_name = 'room.users'
 
@@ -21,8 +23,12 @@ urlpatterns = [
     path('photo/', PhotoViewSet.as_view({'post': 'create'}), name='photo-create'),
     path('booking/update/<int:booking_id>/', BookingUpdateView.as_view(), name='booking-update'),
     path('search/', FilterRoom.as_view(), name='room-search'),
+    path('search/', FilterRoom.as_view(), name='room-search'),
     path('pricing/', RoomPricingListView.as_view(), name='room-pricing-list'),
-    path('send_booking_email/',BookingActionView.as_view(), name='send-conform-rejct-email'),
+    path('occupancy/', OccupancyFilterView.as_view(), name='occupancy-filter'),
     path('pricing/<int:pk>/', RoomPricingDetailView.as_view(), name='room-pricing-detail'),
+    path('send_booking_email/',BookingActionView.as_view(), name='send-conform-rejct-email'),
+    path('dashboard-data/',SendDataToDashboard.as_view(), name='send-to-dashboard' ),
+    path('Room-type-catalog/',HotelViewSet.as_view({'get': 'list'}), name='room-type-catalog'),
 ]
 

@@ -3,7 +3,7 @@ Serializers for room api
 """
 from rest_framework import serializers
 from hotel_booking.hotel.models import Hotel
-from  .models import Book, Photo, Room, RoomPricing, RoomType
+from  .models import Book, Photo, Room, RoomPricing, RoomType, Occupancy
 from  hotel_booking.room.models import Room, RoomPricing
 from django_filters import rest_framework as filters, ModelChoiceFilter, RangeFilter
 
@@ -128,6 +128,44 @@ class ConformBookingSerializer(serializers.ModelSerializer):
         model = Book
         fields = ('user', 'status')  
 
+class DashboardRoomtypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoomType
+        fields = ['name']
+
+class DashboardPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = '__all__'
+    
+class DashboardHotelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hotel
+        fields = ['name']
+
+class DashboardRoomPriceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoomPricing
+        fields = '__all__'
+
+class DashboardRoomSerializer(serializers.ModelSerializer):
+    room_type = DashboardRoomtypeSerializer(read_only=True)
+    hotel = DashboardHotelSerializer(read_only=True)
+    price = DashboardRoomPriceSerializer(read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ['id', 'room_type', 'room_photo', 'hotel', 'occupancy_adult', 'occupancy_child', 'total_rooms', 'price']
+
+class DashboardSerializer(serializers.Serializer):
+    Arrivals = serializers.IntegerField()
+    Departures = serializers.IntegerField()
+    New_Bookings = serializers.IntegerField()
+    Cancelled_Bookings = serializers.IntegerField()
+    Stay_Overs = serializers.IntegerField()
+
+    
+
 class RoomFilter(filters.FilterSet):
     """
 
@@ -149,3 +187,22 @@ class RoomFilter(filters.FilterSet):
 #qs = Room.objects.all().order_by('hotel')
 #f = RoomFilter({'occupancy_adult_min': '1'}, queryset=qs)
 #f = RoomFilter({'occupancy_adult_min': '2', 'occupancy_adult_max': '5'}, queryset=qs)
+
+class OccupancySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Occupancy
+        fields = '__all__'
+
+class OccupancyFilter(filters.FilterSet):
+    start_date = filters.DateFilter(field_name='start_date', lookup_expr='gte')
+    end_date = filters.DateFilter(field_name='end_date', lookup_expr='lte')
+    
+    # today = filters.DateFilter(field_name='start_date', lookup_expr='date', method='filter_today')
+    # this_month = filters.DateFilter(field_name='start_date', lookup_expr='month', method='filter_this_month')
+    # this_year = filters.DateFilter(field_name='start_date', lookup_expr='year', method='filter_this_year')
+
+    class Meta:
+        model = Occupancy
+        fields = ['start_date', 'end_date']
+
+

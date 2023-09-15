@@ -5,13 +5,6 @@ from django.db import models
 from django.contrib.auth.models import BaseUserManager,AbstractBaseUser
 
 
-class HotelOwnerProfile(TimeStampAbstractModel):
-
-    user = models.OneToOneField(
-        "users.User", on_delete=models.CASCADE, related_name="hotel_owner"
-    )
-    mobile_no = PhoneNumberField()
-    avatar = models.ImageField("Image", upload_to=upload_path, blank=True, null=True)
 
     
 class Facility(models.Model):
@@ -59,6 +52,16 @@ class Hotel(models.Model):
 
     def __str__(self):
         return self.name
+
+class HotelOwnerProfile(TimeStampAbstractModel):
+
+    user = models.OneToOneField(
+        "users.User", on_delete=models.CASCADE, related_name="hotel_owner"
+    )
+    mobile_no = PhoneNumberField()
+    avatar = models.ImageField("Image", upload_to=upload_path, blank=True, null=True)
+    hotel = models.OneToOneField(Hotel, related_name="hotel_name", on_delete=models.CASCADE)
+
     
 class HotelFacility(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)

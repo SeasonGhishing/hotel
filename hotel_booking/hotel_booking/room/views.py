@@ -5,14 +5,32 @@ Views for the room api
 #from rest_framework.simplejwt.authentication import JWTAuthentication
 from rest_framework import viewsets, mixins, status, generics
 from rest_framework.permissions import IsAuthenticated
-from .serializers import  BookSerializer, BookUpdateSerializer, PhotoCreateSerializers, RoomFilter, RoomSerializers, RoomPricingSerializer, RoomTypeSerializers, RoomSerializers, RoomPricingSerializer,ConformBookingSerializer
+
+from django.db.models import Q
+from django.utils import timezone
+from django_filters import rest_framework as filters
+
+from .serializers import  BookSerializer, BookUpdateSerializer, DashboardSerializer, \
+PhotoCreateSerializers, RoomFilter, RoomSerializers, RoomPricingSerializer, \
+RoomTypeSerializers, RoomSerializers, RoomPricingSerializer,ConformBookingSerializer, \
+DashboardRoomPriceSerializer, DashboardPhotoSerializer, DashboardHotelSerializer, DashboardRoomSerializer, DashboardRoomtypeSerializer,\
+OccupancyFilter, OccupancySerializer
+
+from hotel_booking.hotel.models import HotelOwnerProfile 
+from hotel_booking.room.models import Occupancy
+
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django_filters import rest_framework as filters
+
 from rest_framework.permissions import IsAuthenticated
 from hotel_booking.room.models import Room, Book, RoomPricing
 from hotel_booking.room.confirm_booking import send_confirmation_email, send_rejection_email
+from hotel_booking.users.models import User
 
 
 class RoomPricingListView(APIView):  # Updated view name
@@ -176,8 +194,8 @@ class BookingActionView(generics.UpdateAPIView):
     queryset = Book.objects.all()
     serializer_class = ConformBookingSerializer
 
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
+    def update(self, request,pk, *args, **kwargs):
+        instance = self.get_object(pk)
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         
@@ -195,6 +213,68 @@ class BookingActionView(generics.UpdateAPIView):
             send_rejection_email(instance.user)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class HotelViewSet(viewsets.ReadOnlyModelViewSet):
+   
+    serializer_class = DashboardRoomSerializer
+    queryset = Room.objects.all()
+
+
+class SendDataToDashboard(APIView):
+    """
+    View class of sending data to the dashboard
+    """
+    authentication_classes = [IsAuthenticated]
+    def get(self, request):
+        try:
+            user = request.User
+            if isinstance(user, User):
+                is_superuser =user.is_superuser
+
+                if is_superuser:
+                
+                    arrivals=Book.arrival()
+                    departures=Book.departures()
+                    new_bookings=Book.new_bookings()
+                    stay_overs=Book.count_stay_overs()
+                    cancelled_bookings = Book.cancelled_bookings()
+                    dashboard_data = {
+                        "Arrivals":arrivals,
+                        "Departures":departures,
+                        "New_Bookings": new_bookings,
+                        "Cancelled_Booking":cancelled_bookings,
+                        "Stay_Overs": stay_overs
+                    }
+                    serializer = DashboardSerializer(dashboard_data)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    return Response({"message":"Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+
+
+            if isinstance(User,HotelOwnerProfile):
+                hotel =  HotelOwnerProfile.hotel
+                book = Book(hotel)
+                arrivals=book.arrival()
+                departures=book.departures()
+                new_bookings=book.new_bookings()
+                stay_overs=book.count_stay_overs()
+                cancelled_bookings = book.cancelled_bookings()
+                dashboard_data = {
+                        "Arrivals":arrivals,
+                        "Departures":departures,
+                        "New_Bookings": new_bookings,
+                        "Cancelled_Booking":cancelled_bookings,
+                        "Stay_Overs": stay_overs
+                    }
+                serializer = DashboardSerializer(dashboard_data)
+                return Response(serializer.data, status=status.HTTP_200_OK)     
+            else:
+                return Response({"message":"Unauthorized"}, status=status.HTTP_403_FORBIDDEN)       
+        except Exception as e:
+            return Response({"error":str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
 
 class BookingUpdateView(APIView):
     """
@@ -223,3 +303,37 @@ class FilterRoom(generics.ListCreateAPIView):
     serializer_class = RoomSerializers
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = RoomFilter
+
+
+class OccupancyFilterView(generics.ListAPIView):
+    serializer_class = OccupancySerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = OccupancyFilter
+
+    def get_queryset(self):
+        queryset = Occupancy.objects.all()
+        now = timezone.now().date()
+        this_month = now.month
+        this_year = now.year
+
+        # Check if the 'this_month' query parameter is present and set to 'true'
+        if self.request.query_params.get('this_month') == 'true':
+            queryset = queryset.filter(
+                Q(start_date__month=this_month, start_date__year=this_year) |
+                Q(end_date__month=this_month, end_date__year=this_year)
+            )
+        # Check if the 'today' query parameter is present and set to 'true'
+        if self.request.query_params.get('today') == 'true':
+            queryset = queryset.filter(
+                Q(start_date__exact=now) |
+                Q(end_date__exact=now)
+            )
+
+        # Check if the 'this_year' query parameter is present and set to 'true'
+        if self.request.query_params.get('this_year') == 'true':
+            queryset = queryset.filter(
+                Q(start_date__year=this_year) |
+                Q(end_date__year=this_year)
+            )
+
+        return queryset
