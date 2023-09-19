@@ -35,7 +35,7 @@ class Room(models.Model):
     features = models.TextField(blank=True)
     room_photo = models.ManyToManyField(Photo)
     total_rooms = models.PositiveIntegerField()
-    room_booked = models.PositiveIntegerField()
+    room_booked = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.room_type.name} Room"
@@ -45,12 +45,11 @@ class Room(models.Model):
 
     def main_photo(self):
         return self.room_photo.get(order=1)
-
-
-
-class HotelPhoto(models.Model):
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
+    
+    def update_room_booked(self):
+        booked_count = Booking.objects.filter(room=self).count()
+        self.room_booked = booked_count
+        self.save()
 
 class RoomPricing(models.Model):
     name = models.OneToOneField(Room, on_delete=models.CASCADE)
@@ -80,7 +79,7 @@ class RoomPricing(models.Model):
 
         super(RoomPricing, self).save()
 
-class Book(models.Model):
+class Booking(models.Model):
 
     """For booking room of the hotel."""
     STATUS = (("PENDING", "PENDING"),
@@ -111,48 +110,27 @@ class Book(models.Model):
 
     def arrival(self):
         # Count the arrivals for today
-        arrival_count = Book.objects.filter(start_date=today, STATUS="CONFIRM").count()
+        arrival_count = Booking.objects.filter(start_date=today, STATUS="CONFIRM").count()
         return arrival_count
 
     def departures(self):
-        departure_count = Book.objects.filter(end_date=today).count()
+        departure_count = Booking.objects.filter(end_date=today).count()
         return departure_count
 
     def new_bookings(self):
-        booking_count = Book.objects.filter(STATUS="CONFIRM", created_at = today).count()
+        booking_count = Booking.objects.filter(STATUS="CONFIRM", created_at = today).count()
         return booking_count
 
     def count_stay_overs(self):
-        stay_over_count = Book.objects.filter(status='CHECK_IN').count()
+        stay_over_count = Booking.objects.filter(status='CHECK_IN').count()
         return stay_over_count
 
     def cancelled_bookings(self):
-        cancelled_count = Book.objects.filter(STATUS='CANCELLED', updated_at = today).count()
+        cancelled_count = Booking.objects.filter(STATUS='CANCELLED', updated_at = today).count()
         return cancelled_count
 
-class Occupancy(models.Model):
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    occupied_rooms = models.PositiveIntegerField(default=0)
-    available_rooms = models.PositiveIntegerField(default=0)
-    unavailable_rooms = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        verbose_name_plural = "Occupancies"
-
-    def update_occupancy(self):
-        booked_rooms = Book.objects.filter(
-            room=self.room,
-            check_in__gte=self.start_date,
-            check_out__lte=self.end_date
-        ).aggregate(total_booked=models.Sum('rooms_booked'))['total_booked'] or 0
-        
-        self.occupied_rooms = booked_rooms
-        self.available_rooms = self.room.total_rooms - booked_rooms
-        self.unavailable_rooms = self.room.room_booked - booked_rooms
-        self.save()
-
     def save(self, *args, **kwargs):
-        self.update_occupancy()
         super().save(*args, **kwargs)
+
+        # Update the room's booked count
+        self.room.update_room_booked()

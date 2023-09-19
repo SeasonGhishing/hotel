@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Facility, Hotel, Photo, Rating
+from .models import Facility, Hotel, HotelOwnerProfile, Photo, Rating
 
 class HotelCreateSerializer(serializers.ModelSerializer):
     facility = serializers.PrimaryKeyRelatedField(
@@ -39,9 +39,8 @@ class HotelCreateSerializer(serializers.ModelSerializer):
         hotel.photos.set(photo_data)
 
         return hotel
-        
 
-    
+
 class FacilitySerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -65,6 +64,7 @@ class RatingSerializer(serializers.ModelSerializer):
         from the validated data. """
         return Rating.objects.create(**validated_data)
 
+
 class PhototSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -75,3 +75,9 @@ class PhototSerializer(serializers.ModelSerializer):
         """ Create a new photo 
         from the validated data. """
         return Photo.objects.create(**validated_data)
+
+
+class HotelOwnerProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HotelOwnerProfile
+        fields = ('hotel', 'user', 'mobile_no', 'avatar')

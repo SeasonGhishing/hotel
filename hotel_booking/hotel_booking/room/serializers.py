@@ -1,18 +1,21 @@
 """
 Serializers for room api
 """
+from decimal import Decimal  
 from rest_framework import serializers
 from hotel_booking.hotel.models import Hotel
 from hotel_booking.hotel.serializers import HotelCreateSerializer
-from  .models import Book, Occupancy, Photo, Room, RoomPricing, RoomType
+from  .models import Booking, Photo, Room, RoomPricing, RoomType
 from  hotel_booking.room.models import Room, RoomPricing
 from django_filters import rest_framework as filters, ModelChoiceFilter, RangeFilter
 from django.utils import timezone
 
+
 class RoomPricingSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = RoomPricing
-        fields = ('id', 'name', 'price_with_breakfast', 'price_without_breakfast', "adult_price",
+        fields = ('id', 'name', 'price_with_breakfast', 'price_without_breakfast', "adult_price", "child_price",
                   'discount_percentage', 'surge_percentage')
 
     def validate(self, data):
@@ -28,9 +31,7 @@ class RoomPricingSerializer(serializers.ModelSerializer):
 
         return data
 
-"""
-Serializers for room api
-"""
+
 class RoomSerializers(serializers.ModelSerializer):
     """Serializers for recipe"""
 
@@ -59,6 +60,7 @@ class RoomSerializers(serializers.ModelSerializer):
         """TO delete room"""
         instance.delete()
 
+
 class PhotoCreateSerializers(serializers.ModelSerializer):
 
     class Meta:
@@ -69,6 +71,7 @@ class PhotoCreateSerializers(serializers.ModelSerializer):
         """ Create a new facility 
         from the validated data. """
         return Photo.objects.create(**validated_data)
+
 
 class RoomTypeSerializers(serializers.ModelSerializer):
 
@@ -81,14 +84,15 @@ class RoomTypeSerializers(serializers.ModelSerializer):
         from the validated data. """
         return RoomType.objects.create(**validated_data)
 
+
 class BookSerializer(serializers.ModelSerializer):
     """
 
     Description: Serializer class of booking room by user.
     """
     class Meta:
-        model = Book
-        fields = ('user', 'room', 'details', 'room_number', 'start_date', 'end_date', 'status')
+        model = Booking
+        fields = ('id', 'user', 'room', 'details', 'room_number', 'start_date', 'end_date', 'status')
 
     def validate_user(self, user):
         """
@@ -112,7 +116,8 @@ class BookSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """ Create a new facility 
         from the validated data. """
-        return Book.objects.create(**validated_data)
+        return Booking.objects.create(**validated_data)
+
 
 class BookUpdateSerializer(serializers.ModelSerializer):
     """
@@ -120,8 +125,9 @@ class BookUpdateSerializer(serializers.ModelSerializer):
     Description: This serializer is use to update the start and end date of booking with change of their status.
     """
     class Meta:
-        model = Book
+        model = Booking
         fields = ['start_date', 'end_date', 'status']
+
 
 class RoomFilter(filters.FilterSet):
     """
@@ -135,72 +141,18 @@ class RoomFilter(filters.FilterSet):
     location = filters.CharFilter(field_name='hotel__location', lookup_expr='exact')
     occupancy_adult = filters.NumberFilter(field_name='occupancy_adult', lookup_expr='gte')
     occupancy_child = filters.NumberFilter(field_name='occupancy_child', lookup_expr='gte')
-    #occupancy_adult = RangeFilter()
 
     class Meta:
         model = Room
         fields = []
-
-#qs = Room.objects.all().order_by('hotel')
-#f = RoomFilter({'occupancy_adult_min': '1'}, queryset=qs)
-#f = RoomFilter({'occupancy_adult_min': '2', 'occupancy_adult_max': '5'}, queryset=qs)
-
-class OccupancySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Occupancy
-        fields = '__all__'
-
-class OccupancyFilter(filters.FilterSet):
-    start_date = filters.DateFilter(field_name='start_date', lookup_expr='gte')
-    end_date = filters.DateFilter(field_name='end_date', lookup_expr='lte')
-    
-    # today = filters.DateFilter(field_name='start_date', lookup_expr='date', method='filter_today')
-    # this_month = filters.DateFilter(field_name='start_date', lookup_expr='month', method='filter_this_month')
-    # this_year = filters.DateFilter(field_name='start_date', lookup_expr='year', method='filter_this_year')
-
-    class Meta:
-        model = Occupancy
-        fields = ['start_date', 'end_date']
-
-    # def filter_today(self, queryset, name, value):
-    #     today = timezone.now().date()
-    #     return queryset.filter(start_date=today)
-
-    # def filter_this_month(self, queryset, name, value):
-    #     if value:
-    #         this_month = timezone.now().month
-    #         this_year = timezone.now().year
-    #         return queryset.filter(start_date__month=this_month, start_date__year=this_year)
-    #     return queryset
-
-    # def filter_this_year(self, queryset, name, value):
-    #     this_year = timezone.now().year
-    #     return queryset.filter(start_date__year=this_year)
 
 
 class ConformBookingSerializer(serializers.ModelSerializer):
     """Serializer class for confirmation of the booking process"""
 
     class Meta:
-        model = Book
+        model = Booking
         fields = ('user', 'status')  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class DashboardRoomtypeSerializer(serializers.ModelSerializer):
@@ -221,16 +173,37 @@ class DashboardHotelSerializer(serializers.ModelSerializer):
 class DashboardRoomPriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomPricing
-        fields = '__all__'
+        fields = ['price_with_breakfast']
 
 class DashboardRoomSerializer(serializers.ModelSerializer):
+    """
+
+    Description: This serializer is use the display the required fields in dashboard of room type
+    """
+
     room_type = DashboardRoomtypeSerializer(read_only=True)
     hotel = DashboardHotelSerializer(read_only=True)
-    price = DashboardRoomPriceSerializer(read_only=True)
+    price_with_breakfast = serializers.SerializerMethodField()
+    final_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Room
-        fields = ['id', 'room_type', 'room_photo', 'hotel', 'occupancy_adult', 'occupancy_child', 'total_rooms', 'price']
+        fields = ['id', 'room_type', 'room_photo', 'hotel', 'occupancy_adult', 'occupancy_child', 'total_rooms', 'room_booked', 'price_with_breakfast', 'final_price']
+     
+    def get_price_with_breakfast(self, obj):
+        try:
+            room_pricing = RoomPricing.objects.get(name=obj)
+            return room_pricing.price_with_breakfast
+        except RoomPricing.DoesNotExist:
+            return 
+    
+    def get_final_price(self, obj):
+        price_with_breakfast = self.get_price_with_breakfast(obj)
+        if price_with_breakfast is not None:
+            price_with_breakfast = Decimal(price_with_breakfast)
+            final_price = price_with_breakfast + (Decimal('0.13') * price_with_breakfast)
+            return final_price
+        return None
 
 
 class DashboardSerializer(serializers.Serializer):
@@ -239,3 +212,17 @@ class DashboardSerializer(serializers.Serializer):
     New_Bookings = serializers.IntegerField()
     Cancelled_Bookings = serializers.IntegerField()
     Stay_Overs = serializers.IntegerField()
+
+
+class OccupancySerializer(serializers.Serializer):
+    """
+
+    Description: This serializer is use the display the Occupancy data chart
+    """
+
+    occupied = serializers.IntegerField()
+    available = serializers.IntegerField()
+    unavailable = serializers.IntegerField()
+    occupancy_rate = serializers.IntegerField()
+    available_rate = serializers.IntegerField()
+    unavailable_rate = serializers.IntegerField()
