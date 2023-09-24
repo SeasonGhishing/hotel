@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Facility, Hotel, HotelOwnerProfile, Photo, Rating
+from .models import Facility, Hotel, HotelOwnerProfile, Payment, Photo, Rating, Revenue
 
 class HotelCreateSerializer(serializers.ModelSerializer):
     facility = serializers.PrimaryKeyRelatedField(
@@ -81,3 +81,23 @@ class HotelOwnerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = HotelOwnerProfile
         fields = ('hotel', 'user', 'mobile_no', 'avatar')
+
+    
+class PaymentSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Payment
+        fields = [
+            'id',
+            'trans_id',
+            'pay_date',
+            'pay_method',
+            'pay_status',
+            'pay_amount',
+            'pay_by',
+        ]
+
+class RevenueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Revenue
+        fields = ('total_sales', 'total_bookings', 'average_order_value')

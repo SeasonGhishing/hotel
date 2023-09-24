@@ -7,6 +7,7 @@ from hotel_booking.hotel.models import Hotel
 from hotel_booking.users.models import User
 from django.db.models import BooleanField, CharField, EmailField
 from django.utils.timezone import localdate 
+from hotel_booking.core.models import TimeStampAbstractModel
 
 today = localdate()
 
@@ -79,7 +80,7 @@ class RoomPricing(models.Model):
 
         super(RoomPricing, self).save()
 
-class Booking(models.Model):
+class Booking(TimeStampAbstractModel):
 
     """For booking room of the hotel."""
     STATUS = (("PENDING", "PENDING"),
@@ -108,25 +109,25 @@ class Booking(models.Model):
     def str(self):
         return f'Booking for {self.room_number} by {self.user}'
 
-    def arrival(self):
+    def arrival():
         # Count the arrivals for today
-        arrival_count = Booking.objects.filter(start_date=today, STATUS="CONFIRM").count()
+        arrival_count = Booking.objects.filter(start_date=today, status="CONFIRM").count()
         return arrival_count
 
-    def departures(self):
+    def departures():
         departure_count = Booking.objects.filter(end_date=today).count()
         return departure_count
 
-    def new_bookings(self):
-        booking_count = Booking.objects.filter(STATUS="CONFIRM", created_at = today).count()
+    def new_bookings():
+        booking_count = Booking.objects.filter(status="CONFIRM", created_at = today).count()
         return booking_count
 
-    def count_stay_overs(self):
+    def count_stay_overs():
         stay_over_count = Booking.objects.filter(status='CHECK_IN').count()
         return stay_over_count
 
-    def cancelled_bookings(self):
-        cancelled_count = Booking.objects.filter(STATUS='CANCELLED', updated_at = today).count()
+    def cancelled_bookings():
+        cancelled_count = Booking.objects.filter(status='CANCELLED', updated_at = today).count()
         return cancelled_count
 
     def save(self, *args, **kwargs):

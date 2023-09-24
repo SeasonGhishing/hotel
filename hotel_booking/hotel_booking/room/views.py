@@ -303,16 +303,38 @@ class HotelRoomViewSet(viewsets.ModelViewSet):
             return rooms
         except HotelOwnerProfile.DoesNotExist:
             return Room.objects.none()
+        
+from django.utils.timezone import localdate 
 
+today = localdate()
 
 class SendDataToDashboard(APIView):
     """
     View class of sending data to the dashboard
     """
-    authentication_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        try:
-            user = request.User
+
+            user = self.request.user
+
+            if HotelOwnerProfile.objects.get(user=user):
+                hotel =  HotelOwnerProfile.hotel
+                book = Booking.objects.filter(room__hotel = hotel)
+                arrivals= book.objects.filter(start_date=today, status="CONFIRM").count()
+                departures=book.departures()
+                new_bookings=book.new_bookings()
+                stay_overs=book.count_stay_overs()
+                cancelled_bookings = book.cancelled_bookings()
+                dashboard_data = {
+                        "Arrivals":arrivals,
+                        "Departures":departures,
+                        "New_Bookings": new_bookings,
+                        "Cancelled_Bookings":cancelled_bookings,
+                        "Stay_Overs": stay_overs
+                    }
+                serializer = DashboardSerializer(dashboard_data)
+                return Response(serializer.data, status=status.HTTP_200_OK)     
+            
             if isinstance(user, User):
                 is_superuser =user.is_superuser
 
@@ -327,37 +349,14 @@ class SendDataToDashboard(APIView):
                         "Arrivals":arrivals,
                         "Departures":departures,
                         "New_Bookings": new_bookings,
-                        "Cancelled_Booking":cancelled_bookings,
+                        "Cancelled_Bookings":cancelled_bookings,
                         "Stay_Overs": stay_overs
                     }
                     serializer = DashboardSerializer(dashboard_data)
                     return Response(serializer.data, status=status.HTTP_200_OK)
                 else:
                     return Response({"message":"Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
-
-
-
-            if isinstance(User,HotelOwnerProfile):
-                hotel =  HotelOwnerProfile.hotel
-                book = Booking(hotel)
-                arrivals=book.arrival()
-                departures=book.departures()
-                new_bookings=book.new_bookings()
-                stay_overs=book.count_stay_overs()
-                cancelled_bookings = book.cancelled_bookings()
-                dashboard_data = {
-                        "Arrivals":arrivals,
-                        "Departures":departures,
-                        "New_Bookings": new_bookings,
-                        "Cancelled_Booking":cancelled_bookings,
-                        "Stay_Overs": stay_overs
-                    }
-                serializer = DashboardSerializer(dashboard_data)
-                return Response(serializer.data, status=status.HTTP_200_OK)     
-            else:
-                return Response({"message":"Unauthorized"}, status=status.HTTP_403_FORBIDDEN)       
-        except Exception as e:
-            return Response({"error":str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+     
 
 
 class OccupancyView(APIView):
