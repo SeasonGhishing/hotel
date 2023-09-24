@@ -3,6 +3,8 @@ from phonenumber_field.modelfields import PhoneNumberField
 from hotel_booking.core.models import TimeStampAbstractModel, upload_path
 from django.db import models
 from django.contrib.auth.models import BaseUserManager,AbstractBaseUser
+from django.contrib.auth import get_user_model
+from django.utils.crypto import get_random_string
 
 
 class HotelOwnerProfile(TimeStampAbstractModel):
@@ -70,3 +72,47 @@ class HotelRating(models.Model):
 class HotelPhoto(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
     photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
+    
+class HotelInternalStaff(models.Model):
+    staff = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='staff_members')
+    admin = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name='admin_staff')
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
+    
+    
+class Payment(models.Model):
+    TRANS_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('confirm', 'Confirm'),
+        ('check_in', 'Check In'),
+        ('check_out', 'Check Out'),
+        ('cancel', 'Cancel'),
+    )
+    
+    trans_id = models.CharField(max_length=255, null=True, blank=True)
+    pay_date = models.DateTimeField()
+    pay_method = models.CharField(max_length=100)
+    pay_status = models.CharField(max_length=10, choices=TRANS_STATUS_CHOICES, default='pending')
+    pay_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    pay_by = models.CharField(max_length=100)
+
+    def save(self, *args, **kwargs):
+        if self.pay_method == 'cash' and not self.trans_id:
+            self.trans_id = get_random_string(length=10)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Payment #{self.id}: {self.pay_amount} - {self.pay_date}"
+    
+
+class Revenue(models.Model):
+    total_sales = models.DecimalField(max_digits=10, decimal_places=2)
+    total_bookings = models.IntegerField()
+    average_order_value = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"Revenue Data: Sales - {self.total_sales}, Bookings - {self.total_bookings}"
+
+
+
+
+
