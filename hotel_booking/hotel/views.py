@@ -8,6 +8,7 @@ from rest_framework import status
 from django.utils.timezone import make_aware
 from rest_framework.views import APIView
 from room.models import Book
+from drf_spectacular.utils import extend_schema
 
 class HotelViewSet(viewsets.ModelViewSet):
     serializer_class = HotelCreateSerializer
@@ -49,7 +50,15 @@ class PhototViewSet(viewsets.ModelViewSet):
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
-    
+
+    @extend_schema(
+        description="Create a new payment.",
+        request={"serializer": PaymentSerializer},  # Specify the request serializer
+        responses={
+            201: {"description": "Payment created successfully", "schema": PaymentSerializer},  # Specify the response serializer
+            400: {"description": "Bad Request"},
+        },
+    )
     def custom_create(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -60,7 +69,26 @@ class PaymentViewSet(viewsets.ModelViewSet):
    
     
 class RevenueAPIView(APIView):
+    @extend_schema(
+        description="Get revenue data including total sales, total bookings, and average order value.",
+        request={"content": {"application/json": {"schema": {}}}},
+        responses={
+            200: {
+                "description": "Successful response",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "total_sales": 1000.0,
+                            "total_bookings": 50,
+                            "average_order_value": 20.0,
+                        }
+                    }
+                },
+            },
+        },
+    )
     def get(self, request, format=None):
+
         # gets from url
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
